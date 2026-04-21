@@ -1,0 +1,100 @@
+export const themes = {
+  paper: {
+    background:           '#F5EFE4',
+    backgroundSecondary:  '#EDE5D8',
+    surface:              '#EDE5D8',
+    surfaceElevated:      '#E6DCCB',
+    card:                 '#FBF7EE',
+    textPrimary:          '#1F1B16',
+    textSecondary:        '#5C5348',
+    textMuted:            '#8C8078',
+    textInverse:          '#F5EFE4',
+    accentTerracotta:     '#B4593E',
+    accentSage:           '#6E8268',
+    accentGold:           '#B98B3B',
+    border:               '#D4C8B8',
+    rule:                 '#E1D8C6',
+    shadow:               'rgba(31, 27, 22, 0.12)',
+    streakFlame:          '#E8721A',
+    tint:                 '#EADFC8',
+    sageSoft:             '#D4DCCD',
+    accentSoft:           '#E9C8B8',
+    goldSoft:             '#EBD9AE',
+  },
+  dusk: {
+    background:           '#1C1A17',
+    backgroundSecondary:  '#242119',
+    surface:              '#2A2720',
+    surfaceElevated:      '#332F27',
+    card:                 '#242119',
+    textPrimary:          '#F3ECDD',
+    textSecondary:        '#C4B8A8',
+    textMuted:            '#8A7D6E',
+    textInverse:          '#1C1A17',
+    accentTerracotta:     '#E0886A',
+    accentSage:           '#A8B9A0',
+    accentGold:           '#D4A85A',
+    border:               '#3A352C',
+    rule:                 '#3A3429',
+    shadow:               'rgba(0, 0, 0, 0.4)',
+    streakFlame:          '#FF8C3A',
+    tint:                 '#2B271F',
+    sageSoft:             '#2E3A2B',
+    accentSoft:           '#5A3828',
+    goldSoft:             '#4A3C20',
+  },
+};
+
+export const typography = {
+  displayLarge:  { fontFamily: 'Newsreader_700Bold',      fontSize: 36, lineHeight: 44 },
+  displayMedium: { fontFamily: 'Newsreader_600SemiBold',   fontSize: 28, lineHeight: 36 },
+  displaySmall:  { fontFamily: 'Newsreader_400Regular',    fontSize: 22, lineHeight: 30 },
+  bodyLarge:     { fontFamily: 'Inter_400Regular',         fontSize: 16, lineHeight: 24 },
+  bodyMedium:    { fontFamily: 'Inter_400Regular',         fontSize: 14, lineHeight: 21 },
+  bodySemibold:  { fontFamily: 'Inter_600SemiBold',        fontSize: 14, lineHeight: 21 },
+  metaLarge:     { fontFamily: 'SourceSerif4_400Regular',  fontSize: 13, lineHeight: 18, letterSpacing: 1.2, textTransform: 'uppercase' },
+  metaSmall:     { fontFamily: 'Inter_400Regular',         fontSize: 11, lineHeight: 16, letterSpacing: 1.5, textTransform: 'uppercase' },
+  wordDisplay:   { fontFamily: 'Newsreader_700Bold',       fontSize: 42, lineHeight: 52 },
+  phonetic:      { fontFamily: 'SourceSerif4_400Regular',  fontSize: 18, lineHeight: 26, fontStyle: 'italic' },
+};
+
+export const spacing = {
+  xs:  4,
+  sm:  8,
+  md:  16,
+  lg:  24,
+  xl:  32,
+  xxl: 48,
+};
+
+export const radius = {
+  sm:   8,
+  md:   14,
+  lg:   20,
+  xl:   28,
+  full: 999,
+};
+
+export const shadows = {
+  sm: {
+    shadowColor: '#1F1B16',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: '#1F1B16',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  lg: {
+    shadowColor: '#1F1B16',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+};
