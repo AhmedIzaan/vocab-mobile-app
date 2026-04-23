@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import Animated from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { spacing, radius } from '../../theme/theme';
 import { Icon } from '../../icons/Icon';
+import { useShake } from '../../hooks/useShake';
+import { useWordEntrance } from '../../hooks/useWordEntrance';
 
 export default function Spell({ ex, theme, onNext }) {
-  const [built, setBuilt] = useState([]);
-  const [used, setUsed] = useState(new Set());
+  const [built, setBuilt]         = useState([]);
+  const [used, setUsed]           = useState(new Set());
   const [submitted, setSubmitted] = useState(false);
+  const { shakeStyle, triggerShake } = useShake();
+  const { entranceStyle, triggerEntrance } = useWordEntrance();
+
+  useEffect(() => {
+    triggerEntrance();
+  }, [ex]);
 
   const pick = (letter, i) => {
     if (submitted || used.has(i)) return;
@@ -18,39 +27,45 @@ export default function Spell({ ex, theme, onNext }) {
   const unpick = (pos) => {
     if (submitted) return;
     const removed = built[pos];
+    if (!removed) return;
     setBuilt(b => b.filter((_, i) => i !== pos));
     setUsed(u => { const n = new Set(u); n.delete(removed.idx); return n; });
   };
 
-  const answer = built.map(b => b.letter).join('');
-  const correct = answer.toLowerCase() === ex.word.toLowerCase();
+  const answer   = built.map(b => b.letter).join('');
+  const correct  = answer.toLowerCase() === ex.word.toLowerCase();
   const complete = answer.length === ex.word.length;
 
   const handleCheck = () => {
+    if (!complete) return;
     setSubmitted(true);
     if (correct) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerShake();
     }
   };
 
-  const slotColor = submitted ? (correct ? theme.accentSage : theme.accentTerracotta) : theme.textPrimary;
+  const slotColor = submitted
+    ? (correct ? theme.accentSage : theme.accentTerracotta)
+    : theme.textPrimary;
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-      <Text style={[styles.type, { color: theme.accentTerracotta, fontFamily: 'SourceSerif4_400Regular' }]}>
-        SPELLING
-      </Text>
-      <Text style={[styles.prompt, { color: theme.textPrimary, fontFamily: 'Newsreader_400Regular' }]}>
-        {ex.prompt}
-      </Text>
+      <Animated.View style={entranceStyle}>
+        <Text style={[styles.type, { color: theme.accentTerracotta, fontFamily: 'SourceSerif4_400Regular' }]}>
+          SPELLING
+        </Text>
+        <Text style={[styles.prompt, { color: theme.textPrimary, fontFamily: 'Newsreader_400Regular' }]}>
+          {ex.prompt}
+        </Text>
+      </Animated.View>
 
       {/* Build slots */}
-      <View style={[styles.slotsCard, {
+      <Animated.View style={[styles.slotsCard, {
         backgroundColor: theme.card,
-        borderColor: submitted && !correct ? theme.accentTerracotta : theme.rule,
-      }]}>
+        borderColor: submitted ? (correct ? theme.accentSage : theme.accentTerracotta) : theme.rule,
+      }, shakeStyle]}>
         {Array.from({ length: ex.word.length }).map((_, i) => {
           const b = built[i];
           return (
@@ -65,7 +80,7 @@ export default function Spell({ ex, theme, onNext }) {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </Animated.View>
 
       {/* Letter bank */}
       <View style={styles.letterBank}>
@@ -73,19 +88,40 @@ export default function Spell({ ex, theme, onNext }) {
           <TouchableOpacity
             key={i}
             onPress={() => pick(l, i)}
-            disabled={used.has(i)}
+            disabled={used.has(i) || submitted}
             style={[styles.letterTile, {
               backgroundColor: used.has(i) ? theme.tint : theme.card,
               borderColor: theme.rule,
               opacity: used.has(i) ? 0.4 : 1,
             }]}
           >
-            <Text style={[styles.letterText, { color: used.has(i) ? theme.textMuted : theme.textPrimary, fontFamily: 'Newsreader_400Regular' }]}>
+            <Text style={[styles.letterText, {
+              color: used.has(i) ? theme.textMuted : theme.textPrimary,
+              fontFamily: 'Newsreader_400Regular',
+            }]}>
               {l}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Feedback */}
+      {submitted && (
+        <View style={[styles.feedbackCard, { backgroundColor: theme.card, borderColor: theme.rule }]}>
+          <Text style={[styles.feedbackLabel, {
+            color: correct ? theme.accentSage : theme.accentTerracotta,
+            fontFamily: 'Inter_400Regular',
+          }]}>
+            {correct ? '✓ CORRECT' : '— NOT QUITE'}
+          </Text>
+          {!correct && (
+            <Text style={[styles.feedbackAnswer, { color: theme.textSecondary, fontFamily: 'Newsreader_400Regular' }]}>
+              The correct spelling is{' '}
+              <Text style={{ fontStyle: 'italic' }}>{ex.word}</Text>
+            </Text>
+          )}
+        </View>
+      )}
 
       <View style={{ marginTop: spacing.lg }}>
         {!submitted ? (
@@ -118,14 +154,17 @@ export default function Spell({ ex, theme, onNext }) {
 }
 
 const styles = StyleSheet.create({
-  type:       { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' },
-  prompt:     { fontSize: 22, lineHeight: 28, marginTop: 14, marginBottom: spacing.lg, letterSpacing: -0.3 },
-  slotsCard:  { borderRadius: radius.lg, borderWidth: 1, padding: 24, flexDirection: 'row', gap: 4, justifyContent: 'center', flexWrap: 'wrap', minHeight: 72, alignItems: 'center', marginBottom: spacing.md },
-  slot:       { width: 28, height: 40, borderBottomWidth: 2, alignItems: 'center', justifyContent: 'flex-end' },
-  slotLetter: { fontSize: 28 },
-  letterBank: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: spacing.md },
-  letterTile: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  letterText: { fontSize: 20 },
-  btn:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: radius.full, paddingVertical: 14 },
-  btnText:    { fontSize: 15 },
+  type:         { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' },
+  prompt:       { fontSize: 22, lineHeight: 28, marginTop: 14, marginBottom: spacing.lg, letterSpacing: -0.3 },
+  slotsCard:    { borderRadius: radius.lg, borderWidth: 1, padding: 24, flexDirection: 'row', gap: 4, justifyContent: 'center', flexWrap: 'wrap', minHeight: 72, alignItems: 'center', marginBottom: spacing.md },
+  slot:         { width: 28, height: 40, borderBottomWidth: 2, alignItems: 'center', justifyContent: 'flex-end' },
+  slotLetter:   { fontSize: 28 },
+  letterBank:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: spacing.md },
+  letterTile:   { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  letterText:   { fontSize: 20 },
+  feedbackCard: { borderRadius: 16, padding: 16, borderWidth: 1, marginTop: spacing.md },
+  feedbackLabel:  { fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase' },
+  feedbackAnswer: { fontSize: 15, lineHeight: 23, marginTop: 6 },
+  btn:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: radius.full, paddingVertical: 14 },
+  btnText:      { fontSize: 15 },
 });

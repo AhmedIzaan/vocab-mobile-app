@@ -6,23 +6,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../theme/ThemeContext';
+import { useGame } from '../gamification/GameContext';
 import { typography, spacing, radius, shadows } from '../theme/theme';
 import { Icon } from '../icons/Icon';
-import { ProgressBar } from '../components/shared/ProgressBar';
+import { XPBar } from '../components/shared/XPBar';
+import { StreakBadge } from '../components/shared/StreakBadge';
 import { sampleWords, INITIAL_USER } from '../data/words';
-
-const STORAGE_KEYS = {
-  STREAK: 'vocab:streak',
-  XP: 'vocab:xp',
-  LEVEL: 'vocab:level',
-  WORDS_LEARNED: 'vocab:wordsLearned',
-  ONBOARDED: 'vocab:onboarded',
-};
 
 export default function Home({ navigation }) {
   const { theme } = useTheme();
-  const [user, setUser] = useState(INITIAL_USER);
-  const [goal, setGoal] = useState(5);
+  const { xp, level, streak, incrementStreak } = useGame();
+  const [user, setUser]   = useState(INITIAL_USER);
+  const [goal, setGoal]   = useState(5);
 
   const dateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',
@@ -30,26 +25,20 @@ export default function Home({ navigation }) {
 
   useEffect(() => {
     async function loadState() {
-      const [streak, xp, level, wordsLearned, dailyGoal] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.STREAK),
-        AsyncStorage.getItem(STORAGE_KEYS.XP),
-        AsyncStorage.getItem(STORAGE_KEYS.LEVEL),
-        AsyncStorage.getItem(STORAGE_KEYS.WORDS_LEARNED),
+      const [wordsLearned, dailyGoal] = await Promise.all([
+        AsyncStorage.getItem('vocab:wordsLearned'),
         AsyncStorage.getItem('vocab:dailyGoal'),
       ]);
       setUser(u => ({
         ...u,
-        streak:       streak       ? parseInt(streak)       : u.streak,
-        xp:           xp           ? parseInt(xp)           : u.xp,
-        level:        level        ? parseInt(level)        : u.level,
         wordsLearned: wordsLearned ? parseInt(wordsLearned) : u.wordsLearned,
       }));
       if (dailyGoal) setGoal(parseInt(dailyGoal));
     }
     loadState();
+    incrementStreak();
   }, []);
 
-  const xpPct = user.xp / user.xpToNext;
   const todaysWords = sampleWords.slice(0, goal);
 
   return (
@@ -73,12 +62,7 @@ export default function Home({ navigation }) {
               Good morning, {user.name}.
             </Text>
           </View>
-          <View style={[styles.streakBadge, { backgroundColor: theme.card, borderColor: theme.rule }]}>
-            <Icon name="flame" size={14} color={theme.streakFlame} />
-            <Text style={[styles.streakNum, { color: theme.textPrimary, fontFamily: 'Inter_600SemiBold' }]}>
-              {user.streak}
-            </Text>
-          </View>
+          <StreakBadge />
         </View>
 
         {/* Trial banner */}
@@ -118,7 +102,6 @@ export default function Home({ navigation }) {
             A small, unhurried ritual. About seven minutes.
           </Text>
 
-          {/* Word preview chips */}
           <View style={styles.chipRow}>
             {todaysWords.map((w, i) => (
               <View key={i} style={[styles.chip, { borderColor: theme.rule, backgroundColor: theme.background }]}>
@@ -141,6 +124,11 @@ export default function Home({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* XP Progress */}
+        <View style={[styles.xpCard, { backgroundColor: theme.card, borderColor: theme.rule }, shadows.sm]}>
+          <XPBar />
+        </View>
+
         {/* Stats row */}
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.rule }, shadows.sm]}>
@@ -148,17 +136,11 @@ export default function Home({ navigation }) {
               LEVEL
             </Text>
             <Text style={[styles.statValue, { color: theme.textPrimary, fontFamily: 'Newsreader_400Regular' }]}>
-              {user.level}
+              {level}
             </Text>
             <Text style={[styles.statSub, { color: theme.textMuted, fontFamily: 'Inter_400Regular' }]}>
-              {user.xp} / {user.xpToNext} xp
+              {xp} xp total
             </Text>
-            <ProgressBar
-              progress={xpPct}
-              color={theme.accentTerracotta}
-              backgroundColor={theme.tint}
-              height={4}
-            />
           </View>
           <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.rule }, shadows.sm]}>
             <Text style={[styles.statLabel, { color: theme.textMuted, fontFamily: 'Inter_400Regular' }]}>
@@ -215,8 +197,6 @@ const styles = StyleSheet.create({
   content:     { padding: spacing.md, paddingBottom: spacing.xxl },
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.lg },
   dateMeta:    { fontSize: 10, letterSpacing: 1.4 },
-  streakBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1 },
-  streakNum:   { fontSize: 14 },
   trialBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, padding: 12, borderWidth: 1, marginBottom: spacing.md },
   trialDayBadge: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   trialDayNum: { fontSize: 20, color: '#FBF7EE' },
@@ -232,6 +212,7 @@ const styles = StyleSheet.create({
   chipText:    { fontSize: 12, letterSpacing: 0.3 },
   startBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: radius.full, paddingVertical: 14 },
   startBtnText: { fontSize: 15 },
+  xpCard:      { borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, marginBottom: spacing.md },
   statsRow:    { flexDirection: 'row', gap: 12, marginBottom: spacing.md },
   statCard:    { flex: 1, borderRadius: radius.lg, padding: 18, borderWidth: 1, gap: 4 },
   statLabel:   { fontSize: 10, letterSpacing: 1.4 },

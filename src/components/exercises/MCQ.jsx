@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import Animated from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { spacing, radius } from '../../theme/theme';
 import { Icon } from '../../icons/Icon';
+import { useShake } from '../../hooks/useShake';
 
 export default function MCQ({ ex, words, theme, onNext }) {
   const [picked, setPicked] = useState(null);
+  const { shakeStyle, triggerShake } = useShake();
   const word = words[ex.wordIdx];
 
   const handlePick = (i) => {
@@ -14,7 +17,7 @@ export default function MCQ({ ex, words, theme, onNext }) {
     if (i === ex.answer) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerShake();
     }
   };
 
@@ -34,15 +37,15 @@ export default function MCQ({ ex, words, theme, onNext }) {
         </View>
       )}
 
-      <View style={styles.options}>
+      <Animated.View style={[styles.options, shakeStyle]}>
         {ex.options.map((opt, i) => {
-          const selected = picked === i;
+          const selected  = picked === i;
           const isCorrect = i === ex.answer;
           const showState = picked !== null;
-          let bg = theme.card;
+          let bg     = theme.card;
           let border = theme.rule;
-          if (showState && isCorrect)         { bg = theme.sageSoft;   border = theme.accentSage; }
-          else if (showState && selected)     { bg = theme.accentSoft; border = theme.accentTerracotta; }
+          if (showState && isCorrect)     { bg = theme.sageSoft;   border = theme.accentSage; }
+          else if (showState && selected) { bg = theme.accentSoft; border = theme.accentTerracotta; }
 
           return (
             <TouchableOpacity
@@ -71,7 +74,7 @@ export default function MCQ({ ex, words, theme, onNext }) {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </Animated.View>
 
       {picked !== null && (
         <View style={styles.feedback}>

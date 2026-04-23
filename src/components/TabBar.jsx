@@ -1,5 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue, useAnimatedStyle,
+  withSequence, withTiming, withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
 import { Icon } from '../icons/Icon';
@@ -11,15 +15,38 @@ const TABS = [
   { id: 'Profile',  label: 'You',      icon: 'user' },
 ];
 
+function TabIcon({ name, focused, color, size }) {
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (focused) {
+      scale.value = withSequence(
+        withTiming(1.3, { duration: 120 }),
+        withSpring(1,   { damping: 8 }),
+      );
+    }
+  }, [focused]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={style}>
+      <Icon name={name} size={size} color={color} filled={focused} />
+    </Animated.View>
+  );
+}
+
 export function TabBar({ state, navigation }) {
   const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets    = useSafeAreaInsets();
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom || 16, backgroundColor: theme.surface, borderTopColor: theme.border }]}>
       {TABS.map((tab, index) => {
         const focused = state.index === index;
-        const color = focused ? theme.accentTerracotta : theme.textMuted;
+        const color   = focused ? theme.accentTerracotta : theme.textMuted;
 
         return (
           <TouchableOpacity
@@ -31,7 +58,7 @@ export function TabBar({ state, navigation }) {
             {focused && (
               <View style={[styles.activeIndicator, { backgroundColor: theme.accentTerracotta }]} />
             )}
-            <Icon name={tab.icon} size={22} color={color} filled={focused} />
+            <TabIcon name={tab.icon} size={22} color={color} focused={focused} />
             <Text style={[styles.label, { color, fontFamily: 'Inter_400Regular' }]}>
               {tab.label}
             </Text>
