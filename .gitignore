@@ -39,3 +39,16 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Windows
+Thumbs.db
+
+# Environment secrets
+.env
+.env.local
