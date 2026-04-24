@@ -5,17 +5,18 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { TabBar } from '../components/TabBar';
-import HomeScreen from '../screens/Home';
-import OnboardingScreen from '../screens/Onboarding';
-import ExerciseScreen from '../screens/Exercise';
-import WordDetailScreen from '../screens/WordDetail';
+import LoginScreen           from '../screens/Login';
+import HomeScreen            from '../screens/Home';
+import OnboardingScreen      from '../screens/Onboarding';
+import ExerciseScreen        from '../screens/Exercise';
+import WordDetailScreen      from '../screens/WordDetail';
 import SessionCompleteScreen from '../screens/SessionComplete';
-import ProgressScreen from '../screens/Progress';
-import ProfileScreen from '../screens/Profile';
-import PaywallScreen from '../screens/Paywall';
+import ProgressScreen        from '../screens/Progress';
+import ProfileScreen         from '../screens/Profile';
+import PaywallScreen         from '../screens/Paywall';
 
 const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Tab   = createBottomTabNavigator();
 
 function MainTabs() {
   return (
@@ -31,21 +32,37 @@ function MainTabs() {
   );
 }
 
-export function AppNavigator() {
+export function AppNavigator({ isAuthenticated, isGuest, initialAuthRoute = 'Main' }) {
+  const showApp = isAuthenticated || isGuest;
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Onboarding"      component={OnboardingScreen} />
-          <Stack.Screen name="Main"            component={MainTabs} />
-          <Stack.Screen name="WordDetail"      component={WordDetailScreen} />
-          <Stack.Screen name="SessionComplete" component={SessionCompleteScreen} />
-          <Stack.Screen
-            name="Paywall"
-            component={PaywallScreen}
-            options={{ presentation: 'modal' }}
-          />
-        </Stack.Navigator>
+        {showApp ? (
+          <Stack.Navigator
+            screenOptions={{ headerShown: false }}
+            initialRouteName={isAuthenticated ? initialAuthRoute : 'Main'}
+          >
+            <Stack.Screen name="Main"            component={MainTabs} />
+            <Stack.Screen name="Onboarding"      component={OnboardingScreen} />
+            <Stack.Screen name="WordDetail"      component={WordDetailScreen} />
+            <Stack.Screen name="SessionComplete" component={SessionCompleteScreen} />
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{ presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="Paywall"
+              component={PaywallScreen}
+              options={{ presentation: 'modal' }}
+            />
+          </Stack.Navigator>
+        ) : (
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+          </Stack.Navigator>
+        )}
       </NavigationContainer>
     </SafeAreaProvider>
   );

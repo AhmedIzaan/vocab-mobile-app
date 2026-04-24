@@ -1,31 +1,39 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
+import { useGame } from '../gamification/GameContext';
+import { useAuthContext } from '../auth/AuthContext';
+import { getXPProgress, getXPForNextLevel, LEVEL_TITLES } from '../gamification/config';
 import { spacing, radius, shadows } from '../theme/theme';
 import { Icon } from '../icons/Icon';
 import { ProgressBar } from '../components/shared/ProgressBar';
-import { INITIAL_USER } from '../data/words';
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-const HEATMAP = Array.from({ length: 35 }, (_, i) => {
-  if (i >= 34) return 2;
-  if (i >= 22) return [1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1][i - 22] ?? 0;
-  return (i * 7 + 3) % 5 > 1 ? ((i % 3 === 0) ? 0.5 : 1) : 0;
-});
+// Blank heatmap for a user with no history
+const EMPTY_HEATMAP = Array.from({ length: 35 }, () => 0);
 
 function heatmapColor(v, theme) {
-  if (v === 0) return theme.tint;
+  if (v === 0)   return theme.tint;
   if (v === 0.5) return theme.accentSoft;
-  if (v === 1) return theme.accentTerracotta;
+  if (v === 1)   return theme.accentTerracotta;
   return theme.textPrimary;
 }
 
 export default function Progress() {
   const { theme } = useTheme();
-  const user = INITIAL_USER;
-  const xpPct = user.xp / user.xpToNext;
+  const { xp, level, streak } = useGame();
+  const { profile } = useAuthContext();
+
+  const longestStreak = profile?.longest_streak ?? streak;
+  const { earned, required, percent } = getXPProgress(xp, level);
+  const xpToNext    = getXPForNextLevel(level);
+  const levelTitle  = LEVEL_TITLES[level]      ?? LEVEL_TITLES[0];
+  const nextTitle   = LEVEL_TITLES[level + 1]  ?? 'Max Level';
+
+  // Weekly activity: 7 empty dots for new users
+  const weeklyActivity = Array(7).fill(0);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
@@ -50,15 +58,15 @@ export default function Progress() {
             </Text>
           </View>
           <Text style={[styles.streakNum, { color: theme.textInverse, fontFamily: 'Newsreader_400Regular' }]}>
-            {user.streak}
+            {streak}
             <Text style={[styles.streakUnit, { color: theme.goldSoft }]}> days</Text>
           </Text>
           <Text style={[styles.streakLongest, { color: theme.goldSoft, fontFamily: 'Newsreader_400Regular' }]}>
-            Longest run: {user.longestStreak} days
+            Longest run: {longestStreak} days
           </Text>
 
           <View style={styles.weekDots}>
-            {user.weeklyActivity.map((a, i) => (
+            {weeklyActivity.map((a, i) => (
               <View key={i} style={styles.weekDotCol}>
                 <View style={[
                   styles.weekDot,
@@ -80,25 +88,26 @@ export default function Progress() {
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.rule }, shadows.sm]}>
           <View style={styles.xpHeader}>
             <Text style={[styles.metaLabel, { color: theme.textMuted, fontFamily: 'Inter_400Regular' }]}>
-              LEVEL {user.level}
+              LEVEL {level}
             </Text>
             <Text style={[styles.xpFraction, { color: theme.textMuted, fontFamily: 'Inter_400Regular' }]}>
-              {user.xp} / {user.xpToNext}
+              {earned} / {required} XP
             </Text>
           </View>
           <Text style={[styles.levelTitle, { color: theme.textPrimary, fontFamily: 'Newsreader_400Regular' }]}>
-            Apprentice Reader
+            {levelTitle}
           </Text>
           <View style={{ marginTop: 14 }}>
             <ProgressBar
-              progress={xpPct}
+              progress={percent}
               color={theme.accentTerracotta}
               backgroundColor={theme.tint}
               height={6}
             />
           </View>
           <Text style={[styles.xpSub, { color: theme.textMuted, fontFamily: 'Newsreader_400Regular' }]}>
-            360 XP until <Text style={{ color: theme.textPrimary, fontWeight: '500' }}>Essayist</Text>
+            {required - earned} XP until{' '}
+            <Text style={{ color: theme.textPrimary, fontWeight: '500' }}>{nextTitle}</Text>
           </Text>
         </View>
 
@@ -109,11 +118,11 @@ export default function Progress() {
               LAST 5 WEEKS
             </Text>
             <Text style={[styles.heatmapSub, { color: theme.textSecondary, fontFamily: 'Newsreader_400Regular' }]}>
-              32 of 35 days
+              {streak} day streak
             </Text>
           </View>
           <View style={styles.heatmapGrid}>
-            {HEATMAP.map((v, i) => (
+            {EMPTY_HEATMAP.map((v, i) => (
               <View
                 key={i}
                 style={[styles.heatCell, { backgroundColor: heatmapColor(v, theme) }]}
@@ -135,9 +144,9 @@ export default function Progress() {
         </Text>
         <View style={styles.badgeGrid}>
           {[
-            { name: 'First week', earned: true, glyph: '7' },
-            { name: 'Bookworm',   earned: true, glyph: '100' },
-            { name: 'Poet',       earned: false, glyph: '250' },
+            { name: 'First week', earned: streak >= 7,   glyph: '7' },
+            { name: 'Bookworm',   earned: xp >= 1000,    glyph: '★' },
+            { name: 'Wordsmith',  earned: level >= 8,     glyph: '✦' },
           ].map((b, i) => (
             <View
               key={i}
@@ -153,7 +162,6 @@ export default function Progress() {
                   backgroundColor: b.earned ? theme.textPrimary : theme.tint,
                   borderColor: b.earned ? theme.accentGold : theme.rule,
                   borderWidth: b.earned ? 2 : 1,
-                  borderStyle: b.earned ? 'solid' : 'dashed',
                 },
               ]}>
                 <Text style={[styles.badgeGlyph, { color: b.earned ? theme.textInverse : theme.textMuted, fontFamily: 'Newsreader_400Regular' }]}>

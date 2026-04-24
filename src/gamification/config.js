@@ -12,49 +12,50 @@ export const XP_REWARDS = {
   FIRST_TIME_WORD:       5,
 };
 
+// Level thresholds — index = level number (0-based)
 export const LEVEL_THRESHOLDS = [
-  0,     // Level 1
-  100,   // Level 2
-  250,   // Level 3
-  500,   // Level 4
-  900,   // Level 5
-  1400,  // Level 6
-  2100,  // Level 7
-  3000,  // Level 8
-  4100,  // Level 9
-  5500,  // Level 10
-  7200,  // Level 11
-  9200,  // Level 12
-  11700, // Level 13
-  14700, // Level 14
-  18300, // Level 15
+  0,     // Level 0
+  100,   // Level 1
+  250,   // Level 2
+  500,   // Level 3
+  900,   // Level 4
+  1400,  // Level 5
+  2100,  // Level 6
+  3000,  // Level 7
+  4100,  // Level 8
+  5500,  // Level 9
+  7200,  // Level 10
+  9200,  // Level 11
+  11700, // Level 12
+  14700, // Level 13
+  18300, // Level 14
 ];
 
-export const MAX_LEVEL = LEVEL_THRESHOLDS.length;
+export const MAX_LEVEL = LEVEL_THRESHOLDS.length - 1; // 14
 
 export const LEVEL_TITLES = {
-  1:  'Curious Mind',
-  2:  'Word Seeker',
-  3:  'Eager Reader',
-  4:  'Keen Learner',
-  5:  'Vocab Apprentice',
-  6:  'Word Artisan',
-  7:  'Language Builder',
-  8:  'Eloquent Speaker',
-  9:  'Wordsmith',
-  10: 'Lexicon Scholar',
-  11: 'Prose Architect',
-  12: 'Literary Sage',
-  13: 'Vocabulary Master',
-  14: 'Grand Lexicologist',
-  15: 'Logophile Supreme',
+  0:  'Curious Mind',
+  1:  'Word Seeker',
+  2:  'Eager Reader',
+  3:  'Keen Learner',
+  4:  'Vocab Apprentice',
+  5:  'Word Artisan',
+  6:  'Language Builder',
+  7:  'Eloquent Speaker',
+  8:  'Wordsmith',
+  9:  'Lexicon Scholar',
+  10: 'Prose Architect',
+  11: 'Literary Sage',
+  12: 'Vocabulary Master',
+  13: 'Grand Lexicologist',
+  14: 'Logophile Supreme',
 };
 
 export function getLevelFromXP(xp) {
-  let level = 1;
+  let level = 0;
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
     if (xp >= LEVEL_THRESHOLDS[i]) {
-      level = i + 1;
+      level = i;
       break;
     }
   }
@@ -62,12 +63,12 @@ export function getLevelFromXP(xp) {
 }
 
 export function getXPForNextLevel(currentLevel) {
-  if (currentLevel >= MAX_LEVEL) return LEVEL_THRESHOLDS[MAX_LEVEL - 1];
-  return LEVEL_THRESHOLDS[currentLevel];
+  if (currentLevel >= MAX_LEVEL) return LEVEL_THRESHOLDS[MAX_LEVEL];
+  return LEVEL_THRESHOLDS[currentLevel + 1];
 }
 
 export function getXPProgress(xp, currentLevel) {
-  const currentThreshold = LEVEL_THRESHOLDS[currentLevel - 1];
+  const currentThreshold = LEVEL_THRESHOLDS[currentLevel];
   const nextThreshold    = getXPForNextLevel(currentLevel);
   const earned           = xp - currentThreshold;
   const required         = nextThreshold - currentThreshold;

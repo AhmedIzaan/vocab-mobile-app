@@ -4,38 +4,29 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../theme/ThemeContext';
 import { useGame } from '../gamification/GameContext';
+import { useAuthContext } from '../auth/AuthContext';
 import { typography, spacing, radius, shadows } from '../theme/theme';
 import { Icon } from '../icons/Icon';
 import { XPBar } from '../components/shared/XPBar';
 import { StreakBadge } from '../components/shared/StreakBadge';
-import { sampleWords, INITIAL_USER } from '../data/words';
+import { sampleWords } from '../data/words';
 
 export default function Home({ navigation }) {
   const { theme } = useTheme();
   const { xp, level, streak, incrementStreak } = useGame();
-  const [user, setUser]   = useState(INITIAL_USER);
-  const [goal, setGoal]   = useState(5);
+  const { profile } = useAuthContext();
+
+  const goal      = profile?.daily_goal || 5;
+  const username  = profile?.username   || 'there';
+  const isPro     = profile?.is_premium || false;
 
   const dateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',
   });
 
   useEffect(() => {
-    async function loadState() {
-      const [wordsLearned, dailyGoal] = await Promise.all([
-        AsyncStorage.getItem('vocab:wordsLearned'),
-        AsyncStorage.getItem('vocab:dailyGoal'),
-      ]);
-      setUser(u => ({
-        ...u,
-        wordsLearned: wordsLearned ? parseInt(wordsLearned) : u.wordsLearned,
-      }));
-      if (dailyGoal) setGoal(parseInt(dailyGoal));
-    }
-    loadState();
     incrementStreak();
   }, []);
 
@@ -59,27 +50,25 @@ export default function Home({ navigation }) {
               {dateStr.toUpperCase()}
             </Text>
             <Text style={[typography.displaySmall, { color: theme.textPrimary, marginTop: 4 }]}>
-              Good morning, {user.name}.
+              Good morning, {username}.
             </Text>
           </View>
           <StreakBadge />
         </View>
 
         {/* Trial banner */}
-        {!user.isPro && user.trialDaysLeft > 0 && (
+        {!isPro && (
           <TouchableOpacity
             onPress={() => navigation.navigate('Paywall')}
             style={[styles.trialBanner, { backgroundColor: theme.card, borderColor: theme.rule }]}
             activeOpacity={0.8}
           >
             <View style={[styles.trialDayBadge, { backgroundColor: theme.accentTerracotta }]}>
-              <Text style={[styles.trialDayNum, { fontFamily: 'Newsreader_700Bold' }]}>
-                {user.trialDaysLeft}
-              </Text>
+              <Text style={[styles.trialDayNum, { fontFamily: 'Newsreader_700Bold' }]}>7</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.trialTitle, { color: theme.textPrimary, fontFamily: 'Inter_600SemiBold' }]}>
-                {user.trialDaysLeft} days of Pro left
+                7 days of Pro left
               </Text>
               <Text style={[styles.trialSub, { color: theme.textMuted, fontFamily: 'Newsreader_400Regular' }]}>
                 Enjoying it? Keep Lexica for $9/mo.
@@ -144,13 +133,13 @@ export default function Home({ navigation }) {
           </View>
           <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.rule }, shadows.sm]}>
             <Text style={[styles.statLabel, { color: theme.textMuted, fontFamily: 'Inter_400Regular' }]}>
-              LEARNED
+              STREAK
             </Text>
             <Text style={[styles.statValue, { color: theme.textPrimary, fontFamily: 'Newsreader_400Regular' }]}>
-              {user.wordsLearned}
+              {streak}
             </Text>
             <Text style={[styles.statSub, { color: theme.textMuted, fontFamily: 'Inter_400Regular' }]}>
-              total words
+              day streak
             </Text>
           </View>
         </View>

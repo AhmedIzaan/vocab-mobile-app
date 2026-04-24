@@ -1,22 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import Animated from 'react-native-reanimated';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { spacing, radius } from '../../theme/theme';
 import { Icon } from '../../icons/Icon';
-import { useShake } from '../../hooks/useShake';
-import { useWordEntrance } from '../../hooks/useWordEntrance';
 
 export default function Spell({ ex, theme, onNext }) {
   const [built, setBuilt]         = useState([]);
   const [used, setUsed]           = useState(new Set());
   const [submitted, setSubmitted] = useState(false);
-  const { shakeStyle, triggerShake } = useShake();
-  const { entranceStyle, triggerEntrance } = useWordEntrance();
+
+  // Shake animation using standard RN Animated (no reanimated plugin needed)
+  const shakeX   = useRef(new Animated.Value(0)).current;
+  const entranceY = useRef(new Animated.Value(20)).current;
+  const entranceOp = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    triggerEntrance();
+    entranceY.setValue(20);
+    entranceOp.setValue(0);
+    Animated.parallel([
+      Animated.spring(entranceY,  { toValue: 0, useNativeDriver: true, tension: 80, friction: 10 }),
+      Animated.timing(entranceOp, { toValue: 1, duration: 300, useNativeDriver: true }),
+    ]).start();
   }, [ex]);
+
+  const triggerShake = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    Animated.sequence([
+      Animated.timing(shakeX, { toValue: -10, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeX, { toValue:  10, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeX, { toValue:  -7, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeX, { toValue:   7, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeX, { toValue:   0, duration: 55, useNativeDriver: true }),
+    ]).start();
+  };
 
   const pick = (letter, i) => {
     if (submitted || used.has(i)) return;
@@ -52,7 +68,7 @@ export default function Spell({ ex, theme, onNext }) {
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-      <Animated.View style={entranceStyle}>
+      <Animated.View style={{ opacity: entranceOp, transform: [{ translateY: entranceY }] }}>
         <Text style={[styles.type, { color: theme.accentTerracotta, fontFamily: 'SourceSerif4_400Regular' }]}>
           SPELLING
         </Text>
@@ -65,7 +81,8 @@ export default function Spell({ ex, theme, onNext }) {
       <Animated.View style={[styles.slotsCard, {
         backgroundColor: theme.card,
         borderColor: submitted ? (correct ? theme.accentSage : theme.accentTerracotta) : theme.rule,
-      }, shakeStyle]}>
+        transform: [{ translateX: shakeX }],
+      }]}>
         {Array.from({ length: ex.word.length }).map((_, i) => {
           const b = built[i];
           return (
@@ -154,17 +171,17 @@ export default function Spell({ ex, theme, onNext }) {
 }
 
 const styles = StyleSheet.create({
-  type:         { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' },
-  prompt:       { fontSize: 22, lineHeight: 28, marginTop: 14, marginBottom: spacing.lg, letterSpacing: -0.3 },
-  slotsCard:    { borderRadius: radius.lg, borderWidth: 1, padding: 24, flexDirection: 'row', gap: 4, justifyContent: 'center', flexWrap: 'wrap', minHeight: 72, alignItems: 'center', marginBottom: spacing.md },
-  slot:         { width: 28, height: 40, borderBottomWidth: 2, alignItems: 'center', justifyContent: 'flex-end' },
-  slotLetter:   { fontSize: 28 },
-  letterBank:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: spacing.md },
-  letterTile:   { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  letterText:   { fontSize: 20 },
-  feedbackCard: { borderRadius: 16, padding: 16, borderWidth: 1, marginTop: spacing.md },
+  type:           { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' },
+  prompt:         { fontSize: 22, lineHeight: 28, marginTop: 14, marginBottom: spacing.lg, letterSpacing: -0.3 },
+  slotsCard:      { borderRadius: radius.lg, borderWidth: 1, padding: 24, flexDirection: 'row', gap: 4, justifyContent: 'center', flexWrap: 'wrap', minHeight: 72, alignItems: 'center', marginBottom: spacing.md },
+  slot:           { width: 28, height: 40, borderBottomWidth: 2, alignItems: 'center', justifyContent: 'flex-end' },
+  slotLetter:     { fontSize: 28 },
+  letterBank:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: spacing.md },
+  letterTile:     { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  letterText:     { fontSize: 20 },
+  feedbackCard:   { borderRadius: 16, padding: 16, borderWidth: 1, marginTop: spacing.md },
   feedbackLabel:  { fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase' },
   feedbackAnswer: { fontSize: 15, lineHeight: 23, marginTop: 6 },
-  btn:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: radius.full, paddingVertical: 14 },
-  btnText:      { fontSize: 15 },
+  btn:            { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: radius.full, paddingVertical: 14 },
+  btnText:        { fontSize: 15 },
 });
